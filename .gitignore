@@ -1,0 +1,4 @@
+venv/
+EEG_data/
+server/__pycache__/
+.env
