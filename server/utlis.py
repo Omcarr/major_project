@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def calculate_fft(eeg_data):
     """
     Calculate FFT of EEG data and return frequency bins and magnitudes.

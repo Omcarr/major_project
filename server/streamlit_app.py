@@ -5,16 +5,15 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import requests
 
-# Load environment variables and configure API
+
 load_dotenv()
+
 GOOGLE_API_KEY = os.environ.get('GEMINI_API_KEY')
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Constants
 MODEL_ROLE = 'EEG chatbot'
 API_URL = "http://localhost:8000/chat_context"
 
-# Page configuration
 st.set_page_config(
     page_title="EEG-Aware AI Assistant", 
     page_icon="🧠",
@@ -38,7 +37,6 @@ def fetch_eeg_context():
 
 def build_prompt(user_input, eeg_json):
     """Build a context-aware prompt including EEG data interpretation"""
-    # Extract the relevant data safely
     band_powers = eeg_json.get("data", {}).get("band_powers", {})
     fft_data = eeg_json.get("data", {}).get("fft_data", {})
     delta = band_powers.get("delta", 0.0)
@@ -51,85 +49,81 @@ def build_prompt(user_input, eeg_json):
     beta_alpha_ratio = round(beta / alpha, 3) if alpha != 0 else "N/A"
 
     return f"""
-You are an emotionally intelligent AI assistant capable of interpreting EEG signals in real-time to understand a user's mental and emotional state.
+        You are a smart, emotionally aware AI assistant that reads real-time EEG signals to understand the user's current mental state.
+        ---
 
----
+        ### 🧠 EEG Input Context
 
-### 🧠 EEG Input Context
+        **Channel Source:** FP1–FP2 (frontal region)  
+        **Signal Preprocessing:**  
+        - Band-pass filter applied (0.5–40 Hz)  
+        - Notch filter at 50 Hz to remove powerline noise  
+        - PSD calculated using Welch's method (2-second windows)  
+        - Band powers averaged over Alpha (8–12 Hz) and Beta (12–30 Hz)
 
-**Channel Source:** FP1–FP2 (frontal region)  
-**Signal Preprocessing:**  
-- Band-pass filter applied (0.5–40 Hz)  
-- Notch filter at 50 Hz to remove powerline noise  
-- PSD calculated using Welch's method (2-second windows)  
-- Band powers averaged over Alpha (8–12 Hz) and Beta (12–30 Hz)
+        ---
 
----
+        ### 🔢 Processed EEG Features
 
-### 🔢 Processed EEG Features
+        **Band Powers (μV²/Hz):**
+        - Delta (0.5–4 Hz): {delta}
+        - Theta (4–8 Hz): {theta}
+        - Alpha (8–13 Hz): {alpha}
+        - Beta (13–30 Hz): {beta}
+        - Gamma (30–50 Hz): {gamma}
 
-**Band Powers (μV²/Hz):**
-- Delta (0.5–4 Hz): {delta}
-- Theta (4–8 Hz): {theta}
-- Alpha (8–13 Hz): {alpha}
-- Beta (13–30 Hz): {beta}
-- Gamma (30–50 Hz): {gamma}
+        **Beta/Alpha Ratio:** {beta_alpha_ratio}
 
-**Beta/Alpha Ratio:** {beta_alpha_ratio}
+        **FFT Snapshot:**  
+        Frequencies (Hz): {fft_data.get("frequencies", [])[:5]}  
+        Magnitudes: {fft_data.get("magnitudes", [])[:5]}
 
-**FFT Snapshot:**  
-Frequencies (Hz): {fft_data.get("frequencies", [])[:5]}  
-Magnitudes: {fft_data.get("magnitudes", [])[:5]}
+        Note: The FFT data shows the frequency distribution of the EEG signal, which aids in identifying dominant bands or anomalies.
 
-Note: The FFT data shows the frequency distribution of the EEG signal, which aids in identifying dominant bands or anomalies.
+        ---
 
----
+        ### 🧠 Interpretation Guide
 
-### 🧠 Interpretation Guide
+        - **Delta ↑** → Sleep, healing, disconnection  
+        - **Theta ↑** → Dreamy, emotional, imaginative  
+        - **Alpha ↑** → Calm, relaxed, open  
+        - **Beta ↑** → Focused, thinking, or anxious  
+        - **Gamma ↑** → Learning, memory, high-level cognition  
+        - **High Beta/Alpha Ratio** → Strong focus, task engagement  
+        - **Low Beta/Alpha Ratio** → Relaxed, possibly distracted
 
-- **Delta ↑** → Sleep, healing, disconnection  
-- **Theta ↑** → Dreamy, emotional, imaginative  
-- **Alpha ↑** → Calm, relaxed, open  
-- **Beta ↑** → Focused, thinking, or anxious  
-- **Gamma ↑** → Learning, memory, high-level cognition  
-- **High Beta/Alpha Ratio** → Strong focus, task engagement  
-- **Low Beta/Alpha Ratio** → Relaxed, possibly distracted
+        ---
 
----
+        ### 🗣️ Adaptive Response Strategy
 
-### 🗣️ Adaptive Response Strategy
+        Interpret the data above and infer the user's **current mental state** (e.g., fatigued, anxious, focused, creative, etc). Based on that, adapt your **tone** and **communication style**:
 
-Interpret the data above and infer the user's **current mental state** (e.g., fatigued, anxious, focused, creative, etc). Based on that, adapt your **tone** and **communication style**:
+        - If stress or overwhelm → Be gentle, reassuring, and emotionally supportive.  
+        - If deep focus → Be clear, concise, and cognitively efficient.  
+        - If relaxed → Be reflective, exploratory, or philosophical.  
+        - If fatigued or low energy → Be encouraging, light, and supportive.
 
-- If stress or overwhelm → Be gentle, reassuring, and emotionally supportive.  
-- If deep focus → Be clear, concise, and cognitively efficient.  
-- If relaxed → Be reflective, exploratory, or philosophical.  
-- If fatigued or low energy → Be encouraging, light, and supportive.
+        Avoid technical jargon unless the user's focus level suggests they are ready to process detailed information.
 
-Avoid technical jargon unless the user's focus level suggests they are ready to process detailed information.
+        ---
 
----
+        ### 🧑 User Input:
+        "{user_input}"
 
-### 🧑 User Input:
-"{user_input}"
+        ---
 
----
+        Now be helpful, human-aware, and kind. give a short, relevant reply that fits their current mental and emotional state.
+        """
 
-Now respond in a way that respects their cognitive and emotional state. Be helpful, human-aware, and kind.
-"""
-
-# Initialize session state for messages if not already done 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display app header with information
 st.title("🧠 EEG-Aware AI Assistant")
 st.markdown("""
 This assistant uses real-time EEG data to adapt its responses to your current mental state.
 It interprets your brainwave patterns to provide more empathetic and context-appropriate answers.
 """)
 
-# Display EEG metrics in sidebar
 with st.sidebar:
     st.header("Current Brain Activity")
     eeg_data = fetch_eeg_context()
@@ -158,11 +152,9 @@ with st.sidebar:
     - **Gamma ↑** → Learning, high cognition
     """)
     
-    # Refresh button for EEG data
     if st.button("Refresh EEG Data"):
         st.rerun()
 
-# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
